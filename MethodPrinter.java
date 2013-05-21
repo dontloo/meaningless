@@ -1,7 +1,6 @@
-
 public class MethodPrinter {
 
-  /**
+  	/**
 	 * @param args
 	 */
 	public static void main(String[] args) {
