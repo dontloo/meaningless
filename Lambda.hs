@@ -10,8 +10,7 @@ import Data.Char
 -- The grammar is suitable for top-down predictive parsing without
 -- modification:
 
--- <type> ::= <simple> | * ident | array [ <simple> ] of <type>
--- <simple> ::= int | char | num .. num
+-- <Expr> ::= var | <Expr> <Expr> | lambda var dot <Expr>
 
 -- First the abstract syntax, the taget of the parser:
 
