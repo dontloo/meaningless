@@ -4,9 +4,6 @@ import theano
 import theano.tensor as tt
 
 
-# the main reason that the loop versions are slower is that 
-# they perform small scale dot product operations many times,
-# instead of doing dot product of a large matrix.
 def compile_theano_version4(number_of_matrices, n):
     import theano.typed_list
     L = theano.typed_list.TypedListType(tt.TensorType(theano.config.floatX, broadcastable=(None, None)))()
@@ -19,7 +16,6 @@ def compile_theano_version4(number_of_matrices, n):
 def compile_theano_version5(number_of_matrices, n):
     import theano.typed_list
     L = theano.typed_list.TypedListType(tt.TensorType(theano.config.floatX, broadcastable=(None, None)))()
-    res = tt.zeros(n, dtype=theano.config.floatX)
 
     def merge_sum(lo, hi):
         if hi-lo == 2:
@@ -30,6 +26,19 @@ def compile_theano_version5(number_of_matrices, n):
 
     res = merge_sum(0, number_of_matrices)
     return theano.function([L], res)
+
+
+# why can't get any speed up
+def compile_theano_version6(number_of_matrices, n):
+    import theano.typed_list
+    L = theano.typed_list.TypedListType(tt.TensorType(theano.config.floatX, broadcastable=(None, None)))()
+    # res, _ = theano.reduce(fn=lambda i, tmp: tmp+tt.dot(L[i].T, L[i]),
+    #                        outputs_info=tt.zeros((n, n), dtype=theano.config.floatX),
+    #                        sequences=[theano.tensor.arange(number_of_matrices, dtype='int64')])
+    # return theano.function([L], res)
+    res, _ = theano.scan(fn=lambda i: tt.dot(L[i].T, L[i]),
+                         sequences=[theano.tensor.arange(number_of_matrices, dtype='int64')])
+    return theano.function([L], res.sum(axis=0))
 
 
 def compile_theano_version1(number_of_matrices, n):
@@ -73,15 +82,17 @@ def numpy_version2(*L):
 def main():
     iteration_count = 100
     number_of_matrices = 200
-    n = 300
+    n = 100
     min_x = 20
     dtype = 'float32'
     theano.config.floatX = dtype
+
     theano_version1 = compile_theano_version1(number_of_matrices, n)
     theano_version2 = compile_theano_version2(number_of_matrices)
     theano_version3 = compile_theano_version3()
     theano_version4 = compile_theano_version4(number_of_matrices, n)
     theano_version5 = compile_theano_version5(number_of_matrices, n)
+    theano_version6 = compile_theano_version6(number_of_matrices, n)
 
     L = [np.random.standard_normal(size=(x, n)).astype(dtype)
          for x in range(min_x, number_of_matrices + min_x)]
@@ -121,11 +132,18 @@ def main():
                          for _ in xrange(iteration_count))
     print 'theano_version5', timeit.default_timer() - start
 
-    assert np.allclose(numpy_res1, numpy_res2, rtol=1e-2)
-    assert np.allclose(numpy_res2, theano_res1, rtol=1e-2)
-    assert np.allclose(theano_res1, theano_res2, rtol=1e-2)
-    assert np.allclose(theano_res2, theano_res3, rtol=1e-2)
-    assert np.allclose(theano_res3, theano_res4, rtol=1e-2)
+    start = timeit.default_timer()
+    theano_res6 = np.sum(theano_version6(L)
+                         for _ in xrange(iteration_count))
+    print 'theano_version6', timeit.default_timer() - start
+
+    assert np.allclose(numpy_res1, numpy_res2, rtol=1e-1)
+    assert np.allclose(numpy_res2, theano_res1, rtol=1e-1)
+    assert np.allclose(theano_res1, theano_res2, rtol=1e-1)
+    assert np.allclose(theano_res2, theano_res3, rtol=1e-1)
+    assert np.allclose(theano_res3, theano_res4, rtol=1e-1)
+    assert np.allclose(theano_res4, theano_res5, rtol=1e-1)
+    assert np.allclose(theano_res3, theano_res6, rtol=1e-1)
 
 
 main()
