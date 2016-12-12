@@ -4,11 +4,11 @@ import matplotlib.pyplot as plt
 im_size = 512
 
 # the big triangle
-t0 = [[0, 0], [1, 0], [0, 1]]
+t0 = [[0, 0], [1, 0], [.5, .5*3**.5]]
 # three small triangles
-t1 = [[0, 0], [.5, 0], [0, .5]]
-t2 = [[.5, 0], [1, 0], [.5, .5]]
-t3 = [[0, .5], [.5, .5], [0, 1]]
+t1 = [[0, 0], [.5, 0], [.25, .25*3**.5]]
+t2 = [[.5, 0], [1, 0], [.75, .25*3**.5]]
+t3 = [[.25, .25*3**.5], [.75, .25*3**.5], [.5, .5*3**.5]]
 T = [t1, t2, t3]
 
 
@@ -37,8 +37,6 @@ for i in range(iter_num):
                     y1, y2 = np.dot(a, [x1, x2, 1])[0:2]
                     if 0 <= y1 < im_size and 0 <= y2 < im_size:
                         new_canvas[y1, y2] = white
-                    # else:
-                        # print x1, x2, y1, y2
     canvas = new_canvas
 
 plt.imshow(np.rot90(canvas), cmap='Greys_r')
