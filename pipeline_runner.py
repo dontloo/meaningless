@@ -33,8 +33,8 @@ class DocClusterModel:
             norm_tfidf_svec = sps_mat_norm(tf_idf_svec)
             res = {'norm_tfidf_svec': norm_tfidf_svec}
 
-        elif fn_name == 'tokenize_zh':
-            tkn_corpus = tokenize_zh(self.var_dict['corpus'])
+        elif fn_name == 'tokenize_hanlp':
+            tkn_corpus = tokenize_hanlp(self.var_dict['corpus'])
             res = {'tkn_corpus': tkn_corpus}
 
         elif fn_name == 'norm_lsa':
@@ -47,17 +47,21 @@ class DocClusterModel:
             res = {'dict_idx': dict_idx, 'idf': idf}
 
         elif fn_name == 'train_kmeans':
-            from sklearn.cluster import KMeans
-            alg = KMeans(n_clusters=3, random_state=0, init='k-means++')
+            alg = KMeans(**self.var_dict['cluster_params'])
             alg.fit(self.var_dict['lsa_corpus'])
             res = {'partition': KMeansPartition(alg)}
+
+        elif fn_name == 'train_norm_lsa':
+            lsa = make_pipeline(TruncatedSVD(128), Normalizer(copy=False))
+            lsa.fit_transform(self.var_dict['norm_tfidf_svec'])
+            res = {'lsa': lsa}
 
         elif fn_name == 'test_cluster_id':
             clsuter_id = self.var_dict['partition'].partition_id(self.var_dict['lsa_corpus'])
             res = {'cluster_id': clsuter_id}
 
         else:
-            raise ValueError("unsupported function")
+            raise ValueError("unsupported function" + fn_name)
         return res
 
 
