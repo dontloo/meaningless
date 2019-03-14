@@ -66,12 +66,25 @@ class DocClusterModel:
 
 
 if __name__ == '__main__':
-    model = DocClusterModel(['tokenize_zh', 'norm_tf_idf', 'norm_lsa', 'train_kmeans'],
-                            ['idf_10k.pkl', 'lsa_body_model.pkl'])
-    trained_kmeans = model.run_pipe(corpus)
+    # train idf
+    model = DocClusterModel(['tokenize_hanlp', 'train_idf'], {})
+    idf = model.run_pipe(body)
+    pickle.dump(idf, open("idf_2k.pkl", "wb"))
+    
+    # fit lsa
+    model = DocClusterModel(['tokenize_hanlp', 'norm_tf_idf', 'train_norm_lsa'], load_vars(['idf_2k.pkl']))
+    lsa = model.run_pipe(body)
+    pickle.dump(lsa, open("lsa_body_model.pkl", "wb"))
+
+    # clustering
+    var_dict = load_vars(['idf_2k.pkl', 'lsa_body_model.pkl'])
+    var_dict['cluster_params'] = {'n_clusters': 3, 'random_state': 0, 'init': 'k-means++'}
+    model = DocClusterModel(['tokenize_hanlp', 'norm_tf_idf', 'norm_lsa', 'train_kmeans'], var_dict)
+    trained_kmeans = model.run_pipe(body)
     pickle.dump(trained_kmeans, open('trained_kmeans.pkl', "wb"))
 
-    model = DocClusterModel(['tokenize_zh', 'norm_tf_idf', 'norm_lsa', 'test_cluster_id'],
-                            ['idf_10k.pkl', 'lsa_body_model.pkl', 'trained_kmeans.pkl'])
-    cluster_id = model.run_pipe([text])
+    # test cluster partition
+    model = DocClusterModel(['tokenize_hanlp', 'norm_tf_idf', 'norm_lsa', 'test_cluster_id'], load_vars(['idf_2k.pkl', 'lsa_body_model.pkl', 'trained_kmeans.pkl']))
+    pickle.dump(model, open('test_model_1.pkl', "wb"))
+    cluster_id = model.run_pipe(["高考第一天　期盼写满千万父母的双眼", "奥迪３款重量级新车将国产　捍卫霸主地位"])
     print(cluster_id)
